@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="description" content="">
+        <meta name="author" content="huicoo">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>林长通地图</title>
+        <style>
+            html, body {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+            }
+            .mapContainer {
+                box-sizing: border-box;
+                width:100%;
+                height: 100%;
+                /* border: 4px solid red; */
+            }
+        </style>
+        <script
+            type="text/javascript"
+            src="http://api.tianditu.gov.cn/api?v=4.0&tk=ef30dff775287120c3b030b000ffc394"
+        ></script>
+        <script>
+            var map;
+            var clMarker; // Current Location Marker
+
+            function debug(message) {
+                reportError(new Error(message));
+            }
+
+            function postMessageToContext(type, params) {
+                var messageJson = {
+                    type: type,
+                    params: params
+                }
+                var message = JSON.stringify(messageJson);
+                window.ReactNativeWebView.postMessage(message);
+            }
+
+            /** Messages sent to the context **/
+            function askToCenterAndZoom() {
+                postMessageToContext('centerAndZoom', [false]);
+            }
+
+            function reportError(error) {
+                var params = [{
+                        message: error.message
+                    }];
+                postMessageToContext('setError', params);
+            }
+
+            /** Messages received from the context */
+            function centerAndZoom(payload) {
+                var longitude = payload.currentPosition.coords.longitude;
+                var latitude = payload.currentPosition.coords.latitude;
+                var zoom = payload.zoomLevel;
+                map.centerAndZoom(new T.LngLat(longitude, latitude), zoom);
+
+                if (clMarker) {
+                    map.removeOverLay(clMarker);
+                    clMarker = null;
+                }
+
+                clMarker = new T.Marker(new T.LngLat(longitude, latitude));
+                map.addOverLay(clMarker);
+            }
+
+            function setZoom(payload) {
+                var zoom = payload.zoomLevel;
+                map.setZoom(zoom);
+            }
+
+            function initMap() {
+                map = new T.Map('mapDiv');
+
+                document.addEventListener('message', function(event) {
+                    try {
+                        var message = event.data;
+                        var messageJson = JSON.parse(message);
+                        switch (messageJson.type) {
+                            case 'CENTER_AND_ZOOM':
+                                centerAndZoom(messageJson.payload);
+                                break;
+                            case 'ZOOMIN':
+                            case 'ZOOMOUT':
+                                setZoom(messageJson.payload);
+                                break;
+                        }
+                    } catch (error) {
+                        reportError(error);
+                    }
+                });
+
+                askToCenterAndZoom();
+            }
+
+            window.onload = initMap;
+        </script>
+    </head>
+    <body>
+        <div id="mapDiv" class="mapContainer"></div>
+    </body>
+</html>

@@ -1,0 +1,10 @@
+{
+    "name": "live-track",
+    "displayName": "live-track",
+    "expo": {
+        "name": "live-track",
+        "slug": "live-track",
+        "version": "1.0.0",
+        "assetBundlePatterns": ["**/*"]
+    }
+}
